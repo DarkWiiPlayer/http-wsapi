@@ -1,10 +1,11 @@
 local M = {}
 
+local log = require 'lumber.global'
+
 local http_server = require 'http.server'
 local http_headers = require 'http.headers'
 
-local function variables(stream)
-	local headers = stream:get_headers()
+local function variables(stream, headers)
 	local result = {}
 	local path = headers:get(":path")
 	local query do
@@ -46,14 +47,24 @@ local function variables(stream)
 	return result
 end
 
-function M.serve(application)
+--- Serves a WSAPI application.
+-- @tparam function application The WSAPI application to serve.
+-- @tparam table options An options table.
+function M.serve(application, settings)
+	log.info("Starting server on", settings.host)
 	local server = http_server.listen {
-		host="0.0.0.0",
-		port = 8080,
+		host = settings.host,
+		port = settings.port,
 		onstream = function(_, stream)
-			local app_status, app_headers, app_body_source = application(variables(stream))
+			local request_headers = stream:get_headers()
+
+			local app_status, app_headers, app_body_source = application(variables(stream, request_headers))
+
+			log[app_status < 400 and "info" or "warn"]
+				("Incoming request on", request_headers:get(":path"), "returned", app_status)
 
 			local headers = http_headers.new()
+
 			headers:append(":status", tostring(app_status))
 			for name, value in pairs(app_headers) do
 				headers:append(name, value)
@@ -65,8 +76,9 @@ function M.serve(application)
 			end
 			stream:write_chunk("", true)
 		end;
-		onerror = function(...)
-			print(...)
+
+		onerror = function(_server, _stream, _event, message)
+			log.error(message)
 		end
 	}
 
