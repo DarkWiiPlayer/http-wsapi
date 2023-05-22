@@ -12,7 +12,9 @@ description = {
 dependencies = {
 	"lua >= 5.1",
 	"http ~> 0.4",
-	"lumber ~> 2.1.0",
+	"lumber ~> 2.1",
+	"shapeshift ~> 1.1",
+	"arrr ~> 2.2",
 }
 build = {
 	type = "builtin",

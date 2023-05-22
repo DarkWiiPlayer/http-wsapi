@@ -1,0 +1,23 @@
+local wsapi = require 'http.wsapi'
+local lumber = require 'lumber'
+
+local settings do
+	local shapeshift = require "shapeshift"
+	local parse = require("arrr") {
+		{ "Address to host to", "--host", "-b", "host" };
+		{ "Port to listen on", "--port", "-p", "port" };
+	}
+	local verify = shapeshift.table {
+		__extra = shapeshift.is.number;
+		host = shapeshift.default("127.0.0.1");
+		port = shapeshift.default("8080");
+	}
+	settings = select(2, assert(verify(parse{...})))
+end
+
+require "lumber.global" {
+	format = require "lumber.format.term";
+	level = lumber.levels.DEBUG;
+}
+
+wsapi.serve(require(...), settings)
